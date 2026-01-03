@@ -10,12 +10,17 @@ export default async function handler(req, res) {
   try {
     const { plate, region = "", phone, lot } = req.body || {};
 
-    if (!plate || !phone || !lot?.addressLine1) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY on server." });
+    }
+
+    if (!plate || !phone || !lot?.lotCode || !lot?.addressLine1) {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    // Fixed Event Rate: $75.00
+    // Fixed Event Rate
     const EVENT_AMOUNT_CENTS = 7500;
+    const SERVICE_FEE_CENTS = 35;
 
     const baseUrl =
       (req.headers["x-forwarded-proto"] || "https") +
@@ -33,24 +38,18 @@ export default async function handler(req, res) {
             currency: "usd",
             product_data: {
               name: "Event Parking",
-              description: `[${lot.lotCode || ""}] ${lot.addressLine1} — ${lot.cityLine || ""}`.trim(),
-              metadata: {
-                lot_code: lot.lotCode || "",
-                lot_address: lot.addressLine1 || "",
-                lot_city: lot.cityLine || ""
-              }
+              description: `[${lot.lotCode}] ${lot.addressLine1} — ${lot.cityLine || ""}`.trim()
             },
-            unit_amount: EVENT_AMOUNT_CENTS
+            unit_amount: EVENT_AMOUNT_CENTS + SERVICE_FEE_CENTS
           },
           quantity: 1
         }
       ],
-
-      // Store your custom info on the session so you can see it in Stripe dashboard
       metadata: {
         plate,
         region,
         phone,
+        operator: lot.operator || "",
         lot_code: lot.lotCode || "",
         lot_address: lot.addressLine1 || "",
         lot_city: lot.cityLine || ""
@@ -59,8 +58,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ url: session.url });
   } catch (err) {
-    return res.status(500).json({
-      error: err?.message || "Server error creating checkout session."
-    });
+    return res.status(500).json({ error: err?.message || "Server error creating checkout session." });
   }
 }
