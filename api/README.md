@@ -1,10 +1,8 @@
-# Parking Event Pay (Vercel)
+# Parking Event Pay
 
-## Deploy
-1. Push this repo to GitHub
-2. Import into Vercel
-3. In Vercel → Project Settings → Environment Variables:
-   - STRIPE_SECRET_KEY = your Stripe secret key
+Deploy on Vercel from GitHub.
 
-## Test locally (optional)
-Use any simple static server; API runs on Vercel.
+## Required environment variable on Vercel:
+STRIPE_SECRET_KEY=sk_live_...
+
+After adding the env var, redeploy.
