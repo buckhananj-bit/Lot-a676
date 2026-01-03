@@ -1,1 +1,6 @@
 
+{
+  "name": "parking-event-pay",
+  "private": true,
+  "version": "1.0.0"
+}
