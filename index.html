@@ -1,247 +1,63 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Event Parking Payment</title>
+import Stripe from "stripe";
 
-  <!-- Make Safari stop “guessing” your page identity -->
-  <meta name="application-name" content="Diamonds Parking Services">
-  <meta name="apple-mobile-web-app-title" content="Diamonds Parking Services">
-  <meta name="theme-color" content="#ffffff">
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-  <!-- Keep previews neutral (no map/streetview-style overlays) -->
-  <meta property="og:title" content="Event Parking Payment">
-  <meta property="og:description" content="Secure parking payment">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="">
-  <meta name="twitter:card" content="summary">
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  <style>
-    :root{
-      --blue:#2563eb;
-      --border:#e5e5e5;
-      --text:#111;
-      --muted:#666;
-      --field:#d0d0d0;
-      --bg:#fff;
-      --danger-bg:#fff4f4;
-      --danger-bd:#ffd1d1;
-      --danger-tx:#7a1a1a;
-    }
-    body{
-      margin:0;
-      background:var(--bg);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
-    }
-    .wrap{max-width:520px;margin:0 auto;padding:16px;}
-    .top{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;}
-    .op{font-size:13px;color:var(--muted);margin-bottom:6px;}
-    .title{font-size:22px;font-weight:950;line-height:1.15;}
-    .city{font-size:14px;color:#444;margin-top:4px;}
-
-    h3{margin:16px 0 8px;}
-
-    .rateBox{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      border:2px solid var(--blue);border-radius:10px;padding:14px;
-    }
-    .rateLabel{font-weight:900;}
-    .ratePrice{font-weight:950;}
-
-    .sectionLabel{font-size:13px;color:#333;margin:18px 0 6px;}
-    .grid{display:grid;gap:10px;}
-    .fieldLabel{font-size:12px;color:#444;margin-bottom:6px;}
-
-    input{
-      width:100%;
-      box-sizing:border-box;
-      padding:12px 12px;
-      border-radius:10px;
-      border:1px solid var(--field);
-      font-size:16px;
-      outline:none;
-      appearance:none;
-      -webkit-appearance:none;
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ error: "STRIPE_SECRET_KEY not set on Vercel." });
     }
 
-    .summary{margin-top:18px;border-top:1px solid var(--border);padding-top:14px;}
-    .summaryTitle{font-weight:950;margin-bottom:10px;}
-    .row{display:flex;justify-content:space-between;margin-bottom:8px;color:#222;}
-    .total{display:flex;justify-content:space-between;font-weight:1000;font-size:16px;margin-top:14px;}
+    const { plate, region = "", phone, lot } = req.body || {};
 
-    button{
-      margin-top:16px;
-      width:100%;
-      padding:14px 16px;
-      border-radius:10px;
-      border:none;
-      background:var(--blue);
-      color:#fff;
-      font-weight:1000;
-      font-size:16px;
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
+    if (!plate || !phone || !lot?.lotCode || !lot?.addressLine1) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
-    button[disabled]{opacity:.7;cursor:not-allowed;}
 
-    .fineprint{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.35;}
-    .error{
-      display:none;
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:10px;
-      background:var(--danger-bg);
-      border:1px solid var(--danger-bd);
-      color:var(--danger-tx);
-      font-size:13px;
-    }
-  </style>
-</head>
-
-<body>
-  <main class="wrap">
-    <div class="top">
-      <div class="op" id="operator"></div>
-      <div class="title" id="lotTitle"></div>
-      <div class="city" id="lotCity"></div>
-    </div>
-
-    <h3>Confirm your rate</h3>
-    <div class="rateBox">
-      <div class="rateLabel">Event rate</div>
-      <div class="ratePrice" id="ratePrice">$75.00</div>
-    </div>
-
-    <div class="sectionLabel">Enter your license plate</div>
-
-    <div class="grid">
-      <div>
-        <div class="fieldLabel">License plate number</div>
-        <input id="plate" type="text" placeholder="ABC1234" autocomplete="off" />
-      </div>
-
-      <div>
-        <div class="fieldLabel">State / Province (Optional)</div>
-        <input id="region" type="text" placeholder="WA" autocomplete="off" />
-      </div>
-
-      <div>
-        <div class="fieldLabel">Enter phone number</div>
-        <!-- Key for iOS: text + inputmode tel; no pattern; no required -->
-        <input id="phone" type="text" inputmode="tel" placeholder="Phone number" autocomplete="tel" />
-      </div>
-    </div>
-
-    <div class="summary">
-      <div class="summaryTitle">Payment Summary</div>
-
-      <div class="row">
-        <div>Subtotal</div>
-        <div id="subtotal">$75.00</div>
-      </div>
-
-      <div class="row">
-        <div>Service Fee</div>
-        <div id="serviceFee">$0.35</div>
-      </div>
-
-      <div class="total">
-        <div>Order Total</div>
-        <div id="orderTotal">$75.35</div>
-      </div>
-
-      <!-- type="button" prevents submit behavior on iOS -->
-      <button id="payBtn" type="button">Pay with Credit Card</button>
-
-      <div class="error" id="errBox"></div>
-
-      <p class="fineprint">
-        Apple Pay / Google Pay will appear inside Stripe Checkout if available.
-      </p>
-    </div>
-  </main>
-
-  <script>
-    // HARD STOP: prevent ANY implicit form submission/validation on iOS Safari
-    document.addEventListener("submit", (e) => e.preventDefault(), true);
-
-    // ==============================
-    // EDIT LOT INFO HERE (ONLY HERE)
-    // ==============================
-    const LOT = {
-      operator: "Diamonds Parking Services",
-      lotCode: "A676",
-      addressLine1: "649 S. Main St. Lot",
-      cityLine: "Seattle, WA"
-    };
-
-    // ==============================
-    // PRICING (single event rate)
-    // ==============================
-    const EVENT_AMOUNT_CENTS = 7500; // $75.00
-    const SERVICE_FEE_CENTS  = 35;   // $0.35
+    // Pricing: $75.00 + $0.35 = $75.35
+    const EVENT_AMOUNT_CENTS = 7500;
+    const SERVICE_FEE_CENTS  = 35;
     const TOTAL_CENTS = EVENT_AMOUNT_CENTS + SERVICE_FEE_CENTS;
 
-    const money = (cents) => `$${(cents / 100).toFixed(2)}`;
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const host = req.headers.host;
+    const baseUrl = `${proto}://${host}`;
 
-    // Render header (force your operator, not repo metadata)
-    document.getElementById("operator").textContent = "Diamonds Parking Services";
-    document.getElementById("lotTitle").textContent = `[${LOT.lotCode}] ${LOT.addressLine1}`;
-    document.getElementById("lotCity").textContent = `${LOT.addressLine1.replace(" Lot","")}, ${LOT.cityLine}`;
-
-    // Render totals
-    document.getElementById("ratePrice").textContent = money(EVENT_AMOUNT_CENTS);
-    document.getElementById("subtotal").textContent = money(EVENT_AMOUNT_CENTS);
-    document.getElementById("serviceFee").textContent = money(SERVICE_FEE_CENTS);
-    document.getElementById("orderTotal").textContent = money(TOTAL_CENTS);
-
-    const payBtn = document.getElementById("payBtn");
-    const errBox = document.getElementById("errBox");
-
-    function showError(msg){
-      errBox.textContent = msg;
-      errBox.style.display = "block";
-    }
-    function clearError(){
-      errBox.textContent = "";
-      errBox.style.display = "none";
-    }
-
-    payBtn.addEventListener("click", async (e) => {
-      // extra hard-cancel for Safari
-      e.preventDefault();
-      e.stopPropagation();
-      clearError();
-
-      const plate  = document.getElementById("plate").value.trim();
-      const region = document.getElementById("region").value.trim();
-      const phone  = document.getElementById("phone").value.trim();
-
-      if (!plate) return showError("Please enter a license plate number.");
-      if (!phone) return showError("Please enter a phone number.");
-
-      payBtn.disabled = true;
-      payBtn.textContent = "Starting checkout…";
-
-      try {
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plate, region, phone, lot: LOT })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Checkout failed.");
-
-        window.location.href = data.url;
-      } catch (err) {
-        showError(err.message || "Checkout failed.");
-        payBtn.disabled = false;
-        payBtn.textContent = "Pay with Credit Card";
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      submit_type: "pay",
+      success_url: `${baseUrl}/success.html`,
+      cancel_url: `${baseUrl}/cancel.html`,
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Event Parking",
+              description: `[${lot.lotCode}] ${lot.addressLine1} — ${lot.cityLine || ""}`.trim()
+            },
+            unit_amount: TOTAL_CENTS
+          },
+          quantity: 1
+        }
+      ],
+      metadata: {
+        plate,
+        region,
+        phone,
+        operator: lot.operator || "Diamonds Parking Services",
+        lot_code: lot.lotCode || "",
+        lot_address: lot.addressLine1 || "",
+        lot_city: lot.cityLine || ""
       }
-    }, { passive: false });
-  </script>
-</body>
-</html>
+    });
+
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Server error creating checkout session." });
+  }
+}
