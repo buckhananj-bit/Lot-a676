@@ -8,24 +8,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { plate, region = "", phone, lot } = req.body || {};
-
     if (!process.env.STRIPE_SECRET_KEY) {
-      return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY on server." });
+      return res.status(500).json({ error: "STRIPE_SECRET_KEY not set on Vercel." });
     }
+
+    const { plate, region = "", phone, lot } = req.body || {};
 
     if (!plate || !phone || !lot?.lotCode || !lot?.addressLine1) {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    // Fixed Event Rate
+    // Pricing: $75.00 + $0.35 = $75.35
     const EVENT_AMOUNT_CENTS = 7500;
-    const SERVICE_FEE_CENTS = 35;
+    const SERVICE_FEE_CENTS  = 35;
+    const TOTAL_CENTS = EVENT_AMOUNT_CENTS + SERVICE_FEE_CENTS;
 
-    const baseUrl =
-      (req.headers["x-forwarded-proto"] || "https") +
-      "://" +
-      req.headers.host;
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const host = req.headers.host;
+    const baseUrl = `${proto}://${host}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
               name: "Event Parking",
               description: `[${lot.lotCode}] ${lot.addressLine1} — ${lot.cityLine || ""}`.trim()
             },
-            unit_amount: EVENT_AMOUNT_CENTS + SERVICE_FEE_CENTS
+            unit_amount: TOTAL_CENTS
           },
           quantity: 1
         }
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         plate,
         region,
         phone,
-        operator: lot.operator || "",
+        operator: lot.operator || "Diamonds Parking Services",
         lot_code: lot.lotCode || "",
         lot_address: lot.addressLine1 || "",
         lot_city: lot.cityLine || ""
