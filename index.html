@@ -4,116 +4,64 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Event Parking Payment</title>
+
+  <!-- Prevent weird “rich preview / save overlay” behaviors -->
+  <meta name="robots" content="noimageindex">
+  <meta property="og:title" content="Event Parking Payment">
+  <meta property="og:description" content="Secure parking payment">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="">
+  <meta name="twitter:card" content="summary">
+
   <style>
-    :root {
-      --blue: #2563eb;
-      --border: #e5e5e5;
-      --text: #111;
-      --muted: #666;
-      --field: #d0d0d0;
-      --bg: #fff;
+    :root{
+      --blue:#2563eb;
+      --border:#e5e5e5;
+      --text:#111;
+      --muted:#666;
+      --field:#d0d0d0;
+      --bg:#fff;
     }
-    body {
-      margin: 0;
-      background: var(--bg);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--text);
+    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);}
+    .wrap{max-width:520px;margin:0 auto;padding:16px;}
+    .top{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;}
+    .op{font-size:13px;color:var(--muted);margin-bottom:6px;}
+    .title{font-size:22px;font-weight:900;line-height:1.15;}
+    .city{font-size:14px;color:#444;margin-top:4px;}
+
+    h3{margin:16px 0 8px;}
+
+    .rateBox{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      border:2px solid var(--blue);border-radius:10px;padding:14px;
     }
-    .wrap {
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-    .top {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-      margin-bottom: 12px;
-    }
-    .op { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-    .title { font-size: 22px; font-weight: 800; line-height: 1.15; }
-    .city { font-size: 14px; color: #444; margin-top: 4px; }
+    .rateLabel{font-weight:800;}
+    .ratePrice{font-weight:900;}
 
-    h3 { margin: 16px 0 8px; }
+    .sectionLabel{font-size:13px;color:#333;margin:18px 0 6px;}
+    .grid{display:grid;gap:10px;}
+    .fieldLabel{font-size:12px;color:#444;margin-bottom:6px;}
 
-    .rateBox {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      border: 2px solid var(--blue);
-      border-radius: 10px;
-      padding: 14px;
-    }
-    .rateLabel { font-weight: 700; }
-    .ratePrice { font-weight: 800; }
-
-    .sectionLabel { font-size: 13px; color: #333; margin: 18px 0 6px; }
-
-    .grid { display: grid; gap: 10px; }
-
-    .fieldLabel { font-size: 12px; color: #444; margin-bottom: 6px; }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--field);
-      font-size: 16px;
-      outline: none;
+    input{
+      width:100%;box-sizing:border-box;padding:12px 12px;border-radius:10px;
+      border:1px solid var(--field);font-size:16px;outline:none;
     }
 
-    .summary {
-      margin-top: 18px;
-      border-top: 1px solid var(--border);
-      padding-top: 14px;
-    }
-    .summaryTitle { font-weight: 800; margin-bottom: 10px; }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      color: #222;
-    }
-    .total {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 900;
-      font-size: 16px;
-      margin-top: 14px;
-    }
+    .summary{margin-top:18px;border-top:1px solid var(--border);padding-top:14px;}
+    .summaryTitle{font-weight:900;margin-bottom:10px;}
+    .row{display:flex;justify-content:space-between;margin-bottom:8px;color:#222;}
+    .total{display:flex;justify-content:space-between;font-weight:950;font-size:16px;margin-top:14px;}
 
-    button {
-      margin-top: 16px;
-      width: 100%;
-      padding: 14px 16px;
-      border-radius: 10px;
-      border: none;
-      background: var(--blue);
-      color: #fff;
-      font-weight: 900;
-      font-size: 16px;
-      cursor: pointer;
+    button{
+      margin-top:16px;width:100%;padding:14px 16px;border-radius:10px;border:none;
+      background:var(--blue);color:#fff;font-weight:950;font-size:16px;cursor:pointer;
     }
-    button[disabled] {
-      opacity: .7;
-      cursor: not-allowed;
-    }
+    button[disabled]{opacity:.7;cursor:not-allowed;}
 
-    .fineprint {
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-    .error {
-      display:none;
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: #fff4f4;
-      border: 1px solid #ffd1d1;
-      color: #7a1a1a;
-      font-size: 13px;
+    .fineprint{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.35;}
+    .error{
+      display:none;margin-top:10px;padding:10px 12px;border-radius:10px;
+      background:#fff4f4;border:1px solid #ffd1d1;color:#7a1a1a;font-size:13px;
     }
   </style>
 </head>
@@ -121,9 +69,9 @@
 <body>
   <main class="wrap">
     <div class="top">
-      <div class="op" id="operator">Diamond Parking Services</div>
-      <div class="title" id="lotTitle">[A676] 649 S. Main St. Lot</div>
-      <div class="city" id="lotCity">Seattle, WA</div>
+      <div class="op" id="operator"></div>
+      <div class="title" id="lotTitle"></div>
+      <div class="city" id="lotCity"></div>
     </div>
 
     <h3>Confirm your rate</h3>
@@ -133,83 +81,84 @@
     </div>
 
     <div class="sectionLabel">Enter your license plate</div>
+
     <div class="grid">
       <div>
         <div class="fieldLabel">License plate number</div>
-        <input id="plate" placeholder="ABC1234" autocomplete="off" />
+        <input id="plate" type="text" placeholder="ABC1234" autocomplete="off" />
       </div>
 
       <div>
         <div class="fieldLabel">State / Province (Optional)</div>
-        <input id="region" placeholder="WA" autocomplete="off" />
+        <input id="region" type="text" placeholder="WA" autocomplete="off" />
       </div>
 
       <div>
         <div class="fieldLabel">Enter phone number</div>
-        <input id="phone" placeholder="(206) 555-1212" autocomplete="off" />
+        <!-- NOTE: text + inputmode tel prevents iOS pattern errors -->
+        <input id="phone" type="text" inputmode="tel" placeholder="Phone number" autocomplete="tel" />
       </div>
     </div>
 
     <div class="summary">
       <div class="summaryTitle">Payment Summary</div>
+
       <div class="row">
         <div>Subtotal</div>
         <div id="subtotal">$75.00</div>
       </div>
+
       <div class="row">
         <div>Service Fee</div>
-        <div id="serviceFee">$0.00</div>
+        <div id="serviceFee">$0.35</div>
       </div>
 
       <div class="total">
         <div>Order Total</div>
-        <div id="orderTotal">$75.00</div>
+        <div id="orderTotal">$75.35</div>
       </div>
 
       <button id="payBtn">Pay with Credit Card</button>
-
       <div class="error" id="errBox"></div>
 
       <p class="fineprint">
         Apple Pay / Google Pay will appear inside Stripe Checkout if available.
-        By continuing, you agree to the applicable terms.
       </p>
     </div>
   </main>
 
   <script>
-    // =========================
-    // EDIT THESE 3 THINGS ONLY:
-    // =========================
+    // ==============================
+    // EDIT ONLY THESE VALUES
+    // ==============================
     const LOT = {
-      operator: "Diamond Parking Services",
-      lotCode: "A676",
-      addressLine1: "649 S. Main St. Lot",
-      cityLine: "Seattle, WA"
+      operator: "Diamonds Parking Services",  // exact wording you asked for
+      lotCode: "A676",                        // <-- CHANGE THIS LOT NUMBER
+      addressLine1: "649 S. Main St. Lot",    // <-- CHANGE ADDRESS LINE
+      cityLine: "Seattle, WA"                 // <-- CHANGE CITY/STATE LINE
     };
 
+    // Pricing
     const EVENT_AMOUNT_CENTS = 7500; // $75.00
-    const SERVICE_FEE_CENTS = 0;     // set to 35 if you want $0.35
+    const SERVICE_FEE_CENTS   = 35;  // $0.35 (matches your screenshot style)
 
-    // =========================
-    // UI fill
-    // =========================
+    // ==============================
+    // Helpers
+    // ==============================
+    const money = (cents) => `$${(cents / 100).toFixed(2)}`;
+
+    // Fill header
     document.getElementById("operator").textContent = LOT.operator;
     document.getElementById("lotTitle").textContent = `[${LOT.lotCode}] ${LOT.addressLine1}`;
-    document.getElementById("lotCity").textContent = LOT.cityLine;
+    document.getElementById("lotCity").textContent = `${LOT.addressLine1.split(" Lot")[0]}, ${LOT.cityLine}`.replace(",,", ",");
 
-    function fmt(cents){ return `$${(cents/100i999).toFixed(2)}`; }
-    // fix typo from my brain: use 100
-    function money(cents){ return `$${(cents/100).toFixed(2)}`; }
-
+    // Fill totals
     document.getElementById("ratePrice").textContent = money(EVENT_AMOUNT_CENTS);
     document.getElementById("subtotal").textContent = money(EVENT_AMOUNT_CENTS);
     document.getElementById("serviceFee").textContent = money(SERVICE_FEE_CENTS);
     document.getElementById("orderTotal").textContent = money(EVENT_AMOUNT_CENTS + SERVICE_FEE_CENTS);
 
-    // =========================
     // Checkout
-    // =========================
     const payBtn = document.getElementById("payBtn");
     const errBox = document.getElementById("errBox");
 
@@ -233,23 +182,19 @@
       if (!phone) return showError("Please enter a phone number.");
 
       payBtn.disabled = true;
-      payBtn.textContent = "Sending you to payment…";
+      payBtn.textContent = "Starting checkout…";
 
       try {
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            plate,
-            region,
-            phone,
-            lot: LOT
-          })
+          body: JSON.stringify({ plate, region, phone, lot: LOT })
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Checkout failed.");
 
+        // Redirect to Stripe Checkout
         window.location.href = data.url;
       } catch (e) {
         showError(e.message);
